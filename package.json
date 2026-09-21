@@ -1,6 +1,6 @@
 {
   "name": "com.vtcong.fastpool",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "VTC Fast Pool",
   "description": "Object pool nhanh cho GameObject, ho tro prewarm va interface IPoolable.",
   "unity": "2021.3",
@@ -13,5 +13,12 @@
     "url": "https://github.com/vtcong2299/VTC_FastPool.git"
   },
   "keywords": ["pool", "object-pool", "performance", "unity"],
-  "dependencies": {}
+  "dependencies": {},
+  "samples": [
+    {
+      "displayName": "Demo & Self Test",
+      "description": "Scene demo ban dan co pooling, kem bo self-test kiem tra pool hoat dong dung.",
+      "path": "Samples~/Demo"
+    }
+  ]
 }

@@ -33,5 +33,16 @@ public class Bullet : MonoBehaviour, IPoolable
 
 ## Samples
 
-Thư mục `Samples/` có scene demo (`FastPoolDemo.unity`) và bộ self-test
-(`FastPoolSelfTest.unity`). Xem `Samples/README.md`.
+Sample **Demo & Self Test** có scene demo (`FastPoolDemo.unity`) và bộ self-test
+(`FastPoolSelfTest.unity`). Import qua Package Manager — xem mục cuối.
+
+## Mở scene sample
+
+Sample **không** được import sẵn. Vào **Window ▸ Package Manager ▸ VTC Fast Pool ▸ Samples ▸ Import**.
+
+Unity copy sample vào `Assets/Samples/VTC Fast Pool/<version>/Demo & Self Test/`, từ đó mở scene bình thường.
+
+> **Vì sao phải import?** Package cài qua git URL nằm trong `Library/PackageCache` và ở
+> chế độ read-only. Unity **cấm mở scene nằm trong package read-only** — báo
+> *"It is not allowed to open a scene in a read-only package"*. Cơ chế Samples của UPM
+> sinh ra chính để giải quyết việc này: nó copy sample sang `Assets/` nơi file ghi được.
