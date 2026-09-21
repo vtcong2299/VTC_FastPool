@@ -1,0 +1,16 @@
+{
+    "name": "vtcong.fastpool.samples",
+    "rootNamespace": "Vtcong.Pool.Samples",
+    "references": [
+        "vtcong.fastpool.runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
