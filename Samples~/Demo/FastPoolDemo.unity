@@ -415,10 +415,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1100030}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: df88837ab41a94d40893d893ff62bb84, type: 3}
+  m_Script: {fileID: 11500000, guid: 2e55d461f53f47799d2df068ed843bd7, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  bulletPrefab: {fileID: 2000010, guid: b1c2d3e4f5a60714a8b9c0d1e2f30501, type: 3}
+  bulletPrefab: {fileID: 2000010, guid: 0533b430497f40fe825d1ac6448198a2, type: 3}
   prewarmCount: 20
   capacity: 0
   autoSpawn: 1

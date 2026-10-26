@@ -1,6 +1,6 @@
 {
   "name": "com.vtcong.fastpool",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "displayName": "VTC Fast Pool",
   "description": "Object pool nhanh cho GameObject, ho tro prewarm va interface IPoolable.",
   "unity": "2021.3",
