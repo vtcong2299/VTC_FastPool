@@ -4,6 +4,19 @@ Tất cả thay đổi đáng chú ý của VTC Fast Pool được ghi ở đây
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/),
 đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [1.2.0] - 2026-10-26
+
+### Added
+- `FastPoolDespawner`: tự trả object về pool khi hết `lifetime`, khi particle chạy xong hoặc khi audio dừng.
+  Có tùy chọn chạy lại particle mỗi lần spawn.
+- `FastPoolPreloader`: khai báo pool trong Inspector (prefab, prewarm, capacity), tùy chọn xóa khi scene unload.
+- `CreatePool(..., keepParentOnReturn)`: trả về pool không đổi parent, hợp với UI. Mặc định `false`, giữ hành vi cũ.
+- `ClearPoolSlowly` và `ClearAllSlowly`: hủy object trong pool dần qua nhiều frame.
+- `FastPool.GetPoolInfos` và cửa sổ **Window ▸ VTC ▸ Fast Pool Monitor** để xem pool lúc đang Play.
+
+### Fixed
+- README ghi `FastPool.Spawn` / `FastPool.Despawn`, tên đúng là `GetPool` / `ReturnPool`.
+
 ## [1.1.0] - 2026-10-26
 
 ### Added

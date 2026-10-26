@@ -44,6 +44,10 @@ namespace Vtcong.Pool.Samples
             yield return TestDoubleReturn();
             yield return TestCustomParentNotDestroyed();
             yield return TestPoolIdNotRecycled();
+            yield return TestKeepParentOnReturn();
+            yield return TestClearPoolSlowly();
+            yield return TestDespawnerLifetime();
+            yield return TestGetPoolInfos();
 
             Debug.Log(_failed == 0
                 ? $"<color=#22aa22><b>[FastPool SelfTest] PASS {_passed}/{_passed + _failed}</b></color>"
@@ -222,8 +226,107 @@ namespace Vtcong.Pool.Samples
             yield return null;
         }
 
+        /// <summary>keepParentOnReturn: ReturnPool khong doi parent; mac dinh van doi parent nhu cu.</summary>
+        private IEnumerator TestKeepParentOnReturn()
+        {
+            GameObject keepPrefab = CreateSource("KeepParent", Vector3.one);
+            GameObject movePrefab = CreateSource("MoveParent", Vector3.one);
+            Transform container = new GameObject("[UI Container]").transform;
+
+            FastPool.CreatePool(keepPrefab, keepParentOnReturn: true);
+
+            GameObject kept = FastPool.GetPool(keepPrefab, container);
+            FastPool.ReturnPool(kept);
+            Check("keepParentOnReturn giu parent", kept.transform.parent == container);
+            Check("keepParentOnReturn van an object", !kept.activeSelf);
+            Check("keepParentOnReturn van vao pool", FastPool.GetPoolCount(keepPrefab) == 1);
+            Check("keepParentOnReturn tai su dung", FastPool.GetPool(keepPrefab, container) == kept);
+
+            GameObject moved = FastPool.GetPool(movePrefab, container);
+            FastPool.ReturnPool(moved);
+            Check("Mac dinh van doi parent ve pool", moved.transform.parent != container);
+
+            FastPool.ClearAll();
+            Destroy(container.gameObject);
+            yield return null;
+        }
+
+        /// <summary>ClearPoolSlowly go pool ngay, huy object idle dan qua nhieu frame.</summary>
+        private IEnumerator TestClearPoolSlowly()
+        {
+            GameObject prefab = CreateSource("Slow", Vector3.one);
+            FastPool.CreatePool(prefab, 10);
+
+            GameObject probe = FastPool.GetPool(prefab);
+            FastPool.ReturnPool(probe);
+
+            FastPool.ClearPoolSlowly(prefab, 3);
+            Check("ClearPoolSlowly go pool ngay", !FastPool.HasPool(prefab));
+
+            yield return null;
+            int alive = CountAlive(prefab.name);
+            Check("ClearPoolSlowly chua huy het sau 1 frame", alive > 0 && alive < 10);
+
+            for (int i = 0; i < 6; i++) yield return null;
+            Check("ClearPoolSlowly huy het sau vai frame", CountAlive(prefab.name) == 0);
+        }
+
+        /// <summary>FastPoolDespawner tra object ve pool sau lifetime.</summary>
+        private IEnumerator TestDespawnerLifetime()
+        {
+            GameObject prefab = CreateSource("Despawner", Vector3.one);
+            FastPoolDespawner despawner = prefab.AddComponent<FastPoolDespawner>();
+            SetPrivate(despawner, "lifetime", 0.2f);
+
+            FastPool.GetPool(prefab);
+            Check("Despawner: dang active", FastPool.GetActiveCount(prefab) == 1);
+
+            yield return new WaitForSeconds(0.4f);
+            Check("Despawner: tu tra ve sau lifetime", FastPool.GetActiveCount(prefab) == 0);
+            Check("Despawner: nam trong pool", FastPool.GetPoolCount(prefab) == 1);
+
+            FastPool.ClearPool(prefab);
+            yield return null;
+        }
+
+        /// <summary>GetPoolInfos phan anh dung so lieu pool.</summary>
+        private IEnumerator TestGetPoolInfos()
+        {
+            GameObject prefab = CreateSource("Infos", Vector3.one);
+            FastPool.CreatePool(prefab, 2, capacity: 5);
+            FastPool.GetPool(prefab);
+
+            var infos = new System.Collections.Generic.List<FastPoolInfo>();
+            FastPool.GetPoolInfos(infos);
+
+            FastPoolInfo info = infos.Find(x => x.Prefab == prefab);
+            Check("GetPoolInfos co pool", info.Prefab == prefab);
+            Check("GetPoolInfos dung so lieu", info.IdleCount == 1 && info.ActiveCount == 1 && info.Capacity == 5);
+
+            FastPool.ClearAll();
+            yield return null;
+        }
+
         // ---------------------------------------------------------
         // HELPERS
+
+        private static int CountAlive(string prefabName)
+        {
+            int count = 0;
+            foreach (GameObject go in Resources.FindObjectsOfTypeAll<GameObject>())
+            {
+                if (go.scene.IsValid() && go.name.StartsWith(prefabName + "(Clone)")) count++;
+            }
+
+            return count;
+        }
+
+        private static void SetPrivate(object target, string field, object value)
+        {
+            target.GetType()
+                .GetField(field, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .SetValue(target, value);
+        }
         // ---------------------------------------------------------
 
         private GameObject CreateSource(string sourceName, Vector3 scale)

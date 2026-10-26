@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -11,6 +12,27 @@ namespace Vtcong.Pool
         void OnReturn();
     }
 
+    public readonly struct FastPoolInfo
+    {
+        public readonly int Id;
+        public readonly GameObject Prefab;
+        public readonly int IdleCount;
+        public readonly int ActiveCount;
+        public readonly int Capacity;
+        public readonly bool KeepParentOnReturn;
+
+        public FastPoolInfo(int id, GameObject prefab, int idleCount, int activeCount, int capacity,
+            bool keepParentOnReturn)
+        {
+            Id = id;
+            Prefab = prefab;
+            IdleCount = idleCount;
+            ActiveCount = activeCount;
+            Capacity = capacity;
+            KeepParentOnReturn = keepParentOnReturn;
+        }
+    }
+
     public static class FastPool
     {
         private sealed class PoolData
@@ -20,6 +42,7 @@ namespace Vtcong.Pool
             public readonly GameObject Prefab;
             public readonly Vector3 PrefabScale;
             public readonly int Capacity;
+            public readonly bool KeepParentOnReturn;
 
             public Transform Parent;
             public bool OwnsParent;
@@ -27,13 +50,15 @@ namespace Vtcong.Pool
             public readonly Stack<FastPoolObject> Idle = new();
             public readonly HashSet<FastPoolObject> Active = new();
 
-            public PoolData(int id, GameObject prefab, Transform parent, bool ownsParent, int capacity)
+            public PoolData(int id, GameObject prefab, Transform parent, bool ownsParent, int capacity,
+                bool keepParentOnReturn)
             {
                 Id = id;
                 PrefabId = prefab.GetInstanceID();
                 Prefab = prefab;
                 PrefabScale = prefab.transform.localScale;
                 Capacity = capacity;
+                KeepParentOnReturn = keepParentOnReturn;
                 Parent = parent;
                 OwnsParent = ownsParent;
             }
@@ -53,6 +78,11 @@ namespace Vtcong.Pool
             }
         }
 
+        // chi de chay coroutine cho ClearPoolSlowly / ClearAllSlowly.
+        private sealed class FastPoolRunner : MonoBehaviour
+        {
+        }
+
         // Key = prefab.GetInstanceID() -> tra cuu bang int, tranh chi phi so sanh cua UnityEngine.Object.
         private static readonly Dictionary<int, PoolData> PoolsByPrefab = new();
         private static readonly Dictionary<int, PoolData> PoolsById = new();
@@ -63,7 +93,14 @@ namespace Vtcong.Pool
         private static readonly IPoolable[] EmptyPoolables = Array.Empty<IPoolable>();
 
         private static Transform _manager;
+        private static FastPoolRunner _runner;
         private static int _nextPoolId = 1;
+
+        // object da go khoi pool, cho ClearPoolSlowly / ClearAllSlowly huy dan.
+        private static readonly Queue<GameObject> PendingDestroy = new();
+        private static bool _isDestroying;
+        private static FastPoolRunner _destroyHost;
+        private static int _destroyPerFrame;
         private static bool _isQuitting;
 
         // =========================================================
@@ -82,7 +119,12 @@ namespace Vtcong.Pool
             LiveObjects.Clear();
 
             _manager = null;
+            _runner = null;
             _nextPoolId = 1;
+
+            PendingDestroy.Clear();
+            _isDestroying = false;
+            _destroyHost = null;
             _isQuitting = false;
 
             Application.quitting -= OnApplicationQuitting;
@@ -98,14 +140,18 @@ namespace Vtcong.Pool
         // CREATE
         // =========================================================
 
+        /// <param name="keepParentOnReturn">
+        /// True: ReturnPool chi SetActive(false), giu nguyen parent va transform. Hop voi UI
+        /// (tranh rebuild Canvas khi doi parent). Chi co tac dung khi pool duoc tao lan dau.
+        /// </param>
         public static void CreatePool(GameObject prefab, int prewarmCount = 0, Transform poolParent = null,
-            int capacity = 0)
+            int capacity = 0, bool keepParentOnReturn = false)
         {
-            GetOrCreatePool(prefab, poolParent, capacity, prewarmCount);
+            GetOrCreatePool(prefab, poolParent, capacity, prewarmCount, keepParentOnReturn);
         }
 
         private static PoolData GetOrCreatePool(GameObject prefab, Transform poolParent, int capacity,
-            int prewarmCount)
+            int prewarmCount, bool keepParentOnReturn = false)
         {
             if (prefab == null)
             {
@@ -123,6 +169,11 @@ namespace Vtcong.Pool
                                      $"bo qua capacity {capacity}.");
                 }
 
+                if (keepParentOnReturn && !pool.KeepParentOnReturn)
+                {
+                    Debug.LogWarning($"[FastPool] Pool '{prefab.name}' da ton tai, bo qua keepParentOnReturn.");
+                }
+
                 if (prewarmCount > 0) Prewarm(pool, prewarmCount);
                 return pool;
             }
@@ -133,7 +184,8 @@ namespace Vtcong.Pool
             if (ownsParent) poolParent = CreatePoolParent(prefab);
 
             int poolId = _nextPoolId++;
-            pool = new PoolData(poolId, prefab, poolParent, ownsParent, Mathf.Max(0, capacity));
+            pool = new PoolData(poolId, prefab, poolParent, ownsParent, Mathf.Max(0, capacity),
+                keepParentOnReturn);
 
             PoolsByPrefab.Add(pool.PrefabId, pool);
             PoolsById.Add(poolId, pool);
@@ -338,6 +390,12 @@ namespace Vtcong.Pool
                 return;
             }
 
+            if (pool.KeepParentOnReturn)
+            {
+                pool.Idle.Push(poolObject);
+                return;
+            }
+
             Transform targetTransform = poolObject.transform;
             targetTransform.SetParent(EnsureParent(pool), false);
             targetTransform.localPosition = Vector3.zero;
@@ -393,6 +451,8 @@ namespace Vtcong.Pool
 
         public static void ClearAll()
         {
+            FlushPendingDestroy();
+
             foreach (PoolData pool in PoolsById.Values) DestroyPool(pool);
 
             PoolsByPrefab.Clear();
@@ -404,6 +464,116 @@ namespace Vtcong.Pool
 
             // KHONG reset _nextPoolId: object dang active van giu PoolId cu.
             // Cap lai id se khien chung duoc tra vao nham pool khac prefab.
+        }
+
+        /// <summary>
+        /// Nhu ClearPool nhung object dang nam trong pool duoc huy dan, toi da destroyPerFrame moi frame,
+        /// tranh khung hinh khi don pool lon. Object dang active van bi huy ngay nhu ClearPool.
+        /// Pool bi go khoi registry ngay, GetPool sau do se tao pool moi.
+        /// </summary>
+        public static void ClearPoolSlowly(GameObject prefab, int destroyPerFrame = 20)
+        {
+            if (prefab == null) return;
+            if (!PoolsByPrefab.TryGetValue(prefab.GetInstanceID(), out PoolData pool)) return;
+
+            if (!CanDestroySlowly(destroyPerFrame))
+            {
+                ClearPool(prefab);
+                return;
+            }
+
+            PoolsByPrefab.Remove(pool.PrefabId);
+            PoolsById.Remove(pool.Id);
+
+            DetachPool(pool);
+            StartDestroyingPending(destroyPerFrame);
+        }
+
+        /// <summary>Nhu ClearAll nhung huy dan qua nhieu frame. [FastPoolManager] duoc giu lai.</summary>
+        public static void ClearAllSlowly(int destroyPerFrame = 20)
+        {
+            if (!CanDestroySlowly(destroyPerFrame))
+            {
+                ClearAll();
+                return;
+            }
+
+            foreach (PoolData pool in PoolsById.Values) DetachPool(pool);
+
+            PoolsByPrefab.Clear();
+            PoolsById.Clear();
+
+            StartDestroyingPending(destroyPerFrame);
+        }
+
+        private static bool CanDestroySlowly(int destroyPerFrame)
+        {
+            if (destroyPerFrame <= 0 || !Application.isPlaying || _isQuitting) return false;
+
+            EnsureManager();
+            return _runner != null;
+        }
+
+        private static void DetachPool(PoolData pool)
+        {
+            FastPoolObject[] active = new FastPoolObject[pool.Active.Count];
+            pool.Active.CopyTo(active);
+            pool.Active.Clear();
+
+            for (int i = 0; i < active.Length; i++)
+            {
+                if (active[i] != null) Release(active[i]);
+            }
+
+            while (pool.Idle.Count > 0)
+            {
+                FastPoolObject poolObject = pool.Idle.Pop();
+                if (poolObject == null) continue;
+
+                Detach(poolObject);
+                PendingDestroy.Enqueue(poolObject.gameObject);
+            }
+
+            // parent xep cuoi: huy parent truoc se keo theo moi object con trong cung 1 frame.
+            if (pool.OwnsParent && pool.Parent != null) PendingDestroy.Enqueue(pool.Parent.gameObject);
+            pool.Parent = null;
+        }
+
+        private static void StartDestroyingPending(int destroyPerFrame)
+        {
+            _destroyPerFrame = destroyPerFrame;
+
+            // runner co the da bi huy cung [FastPoolManager] -> coroutine cu chet, phai chay lai.
+            if (_isDestroying && _destroyHost == _runner) return;
+
+            _destroyHost = _runner;
+            _isDestroying = true;
+            _runner.StartCoroutine(DestroyPendingGradually());
+        }
+
+        private static IEnumerator DestroyPendingGradually()
+        {
+            while (PendingDestroy.Count > 0)
+            {
+                for (int i = 0; i < _destroyPerFrame && PendingDestroy.Count > 0; i++)
+                {
+                    GameObject target = PendingDestroy.Dequeue();
+                    if (target != null) Object.Destroy(target);
+                }
+
+                yield return null;
+            }
+
+            _isDestroying = false;
+            _destroyHost = null;
+        }
+
+        private static void FlushPendingDestroy()
+        {
+            while (PendingDestroy.Count > 0) SafeDestroy(PendingDestroy.Dequeue());
+
+            _isDestroying = false;
+            _destroyHost = null;
         }
 
         private static void DestroyPool(PoolData pool)
@@ -436,9 +606,14 @@ namespace Vtcong.Pool
         /// <summary>Go khoi registry roi huy. PoolId = 0 de object nay khong bao gio khop pool nao khac.</summary>
         private static void Release(FastPoolObject poolObject)
         {
+            Detach(poolObject);
+            SafeDestroy(poolObject.gameObject);
+        }
+
+        private static void Detach(FastPoolObject poolObject)
+        {
             LiveObjects.Remove(poolObject.GoId);
             poolObject.PoolId = 0;
-            SafeDestroy(poolObject.gameObject);
         }
 
         private static void Unregister(FastPoolObject poolObject)
@@ -472,6 +647,19 @@ namespace Vtcong.Pool
         {
             if (prefab == null) return 0;
             return PoolsByPrefab.TryGetValue(prefab.GetInstanceID(), out PoolData pool) ? pool.Active.Count : 0;
+        }
+
+        /// <summary>Ghi thong tin moi pool hien co vao results (results bi Clear truoc).</summary>
+        public static void GetPoolInfos(List<FastPoolInfo> results)
+        {
+            if (results == null) return;
+
+            results.Clear();
+            foreach (PoolData pool in PoolsById.Values)
+            {
+                results.Add(new FastPoolInfo(pool.Id, pool.Prefab, pool.Idle.Count, pool.Active.Count, pool.Capacity,
+                    pool.KeepParentOnReturn));
+            }
         }
 
         // =========================================================
@@ -552,7 +740,11 @@ namespace Vtcong.Pool
 
             // Song qua scene load: neu khong, toan bo object trong pool bi huy
             // trong khi dictionary van giu tham chieu chet.
-            if (Application.isPlaying) Object.DontDestroyOnLoad(manager);
+            if (Application.isPlaying)
+            {
+                Object.DontDestroyOnLoad(manager);
+                _runner = manager.AddComponent<FastPoolRunner>();
+            }
 
             return _manager;
         }
