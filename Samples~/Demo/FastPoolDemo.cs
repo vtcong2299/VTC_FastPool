@@ -38,13 +38,13 @@ namespace Vtcong.Pool.Samples
             _bulletPrefab = bulletPrefab == null ? BuildRuntimePrefab() : bulletPrefab;
 
             // Tao pool + prewarm truoc de tranh giat khi ban vien dau tien.
-            FastPool.CreatePool(_bulletPrefab, prewarmCount, capacity: capacity);
+            VtcFastPool.CreatePool(_bulletPrefab, prewarmCount, capacity: capacity);
         }
 
         private void OnDestroy()
         {
             // Don dep: huy ca object dang bay lan object dang nam trong pool.
-            FastPool.ClearPool(_bulletPrefab);
+            VtcFastPool.ClearPool(_bulletPrefab);
 
             if (_prefabHolder != null) Destroy(_prefabHolder.gameObject);
         }
@@ -67,8 +67,8 @@ namespace Vtcong.Pool.Samples
             Vector3 direction = Quaternion.Euler(0f, 0f, _angle) * Vector3.up;
             Vector3 position = transform.position + direction * spawnRadius;
 
-            // Lay theo component: FastPool tu tra object ve pool neu prefab thieu component.
-            DemoBullet bullet = FastPool.GetPool<DemoBullet>(_bulletPrefab, position, Quaternion.identity);
+            // Lay theo component: VtcFastPool tu tra object ve pool neu prefab thieu component.
+            DemoBullet bullet = VtcFastPool.GetPool<DemoBullet>(_bulletPrefab, position, Quaternion.identity);
             if (bullet == null) return;
 
             bullet.Launch(direction);
@@ -77,10 +77,10 @@ namespace Vtcong.Pool.Samples
         private void OnGUI()
         {
             GUILayout.BeginArea(new Rect(10, 10, 260, 250), GUI.skin.box);
-            GUILayout.Label("FastPool Demo");
+            GUILayout.Label("VtcFastPool Demo");
 
-            GUILayout.Label($"Trong pool : {FastPool.GetPoolCount(_bulletPrefab)}");
-            GUILayout.Label($"Dang dung  : {FastPool.GetActiveCount(_bulletPrefab)}");
+            GUILayout.Label($"Trong pool : {VtcFastPool.GetPoolCount(_bulletPrefab)}");
+            GUILayout.Label($"Dang dung  : {VtcFastPool.GetActiveCount(_bulletPrefab)}");
             GUILayout.Label($"OnSpawn    : {DemoBullet.SpawnCallbacks}");
             GUILayout.Label($"OnReturn   : {DemoBullet.ReturnCallbacks}");
 
@@ -91,16 +91,16 @@ namespace Vtcong.Pool.Samples
                 for (int i = 0; i < 10; i++) SpawnOne();
             }
 
-            if (GUILayout.Button("Return All")) FastPool.ReturnAll(_bulletPrefab);
-            if (GUILayout.Button("Prewarm +20")) FastPool.Prewarm(_bulletPrefab, 20);
-            if (GUILayout.Button("Clear Pool")) FastPool.ClearPool(_bulletPrefab);
+            if (GUILayout.Button("Return All")) VtcFastPool.ReturnAll(_bulletPrefab);
+            if (GUILayout.Button("Prewarm +20")) VtcFastPool.Prewarm(_bulletPrefab, 20);
+            if (GUILayout.Button("Clear Pool")) VtcFastPool.ClearPool(_bulletPrefab);
 
             GUILayout.EndArea();
         }
 
         /// <summary>
-        /// Dung mot "prefab" ngay trong runtime. FastPool nhan bat ky GameObject nao lam prefab nguon.
-        /// Scale co chu y dat khac 1 de kiem chung FastPool giu dung scale goc.
+        /// Dung mot "prefab" ngay trong runtime. VtcFastPool nhan bat ky GameObject nao lam prefab nguon.
+        /// Scale co chu y dat khac 1 de kiem chung VtcFastPool giu dung scale goc.
         /// </summary>
         private GameObject BuildRuntimePrefab()
         {

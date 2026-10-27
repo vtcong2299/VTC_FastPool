@@ -9,7 +9,7 @@ Hai scene da setup san, mo len la chay duoc ngay:
 | `DemoBullet.prefab` | Prefab vien dan dung cho scene demo |
 
 > Chay tung scene mot, dung ghep ca hai vao cung 1 scene: `FastPoolSelfTest` co goi
-> `FastPool.ClearAll()` nen se don luon pool cua demo.
+> `VtcFastPool.ClearAll()` nen se don luon pool cua demo.
 
 ## 1. FastPoolDemo — demo truc quan
 
@@ -47,16 +47,16 @@ Cac muc duoc kiem tra:
 | Custom parent | `ClearPool` khong huy parent do nguoi dung truyen vao |
 | Pool id | Sau `ClearAll`, object cu khong the lot vao pool cua prefab khac |
 
-> Test co in ra vai dong Warning `[FastPool] ...` — day la ket qua **mong doi**,
+> Test co in ra vai dong Warning `[VtcFastPool] ...` — day la ket qua **mong doi**,
 > moi dong deu duoc bao truoc bang `[SelfTest] 1 warning ngay duoi day la mong doi:`.
 > Chi cac dong `FAIL` mau do moi la loi.
 
-Ket qua cuoi cung: `[FastPool SelfTest] PASS n/n`.
+Ket qua cuoi cung: `[VtcFastPool SelfTest] PASS n/n`.
 
 ## Ghi chu khi dung that
 
 - `CreatePool(prefab, prewarmCount, poolParent, capacity)` — goi luc load man choi de tranh giat.
 - `capacity` gioi han so object **giu san** trong pool, khong gioi han so object spawn dong thoi.
-- Neu tu truyen `poolParent`, `ClearPool` se khong huy parent do (chi huy parent do FastPool tu tao).
-- Nen luon `ReturnPool` thay vi `Destroy`. Neu lo `Destroy` tu ben ngoai, FastPool van tu don dep
+- Neu tu truyen `poolParent`, `ClearPool` se khong huy parent do (chi huy parent do VtcFastPool tu tao).
+- Nen luon `ReturnPool` thay vi `Destroy`. Neu lo `Destroy` tu ben ngoai, VtcFastPool van tu don dep
   nho `OnDestroy` cua component noi bo.

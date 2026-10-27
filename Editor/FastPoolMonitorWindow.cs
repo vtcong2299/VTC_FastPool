@@ -28,7 +28,7 @@ namespace Vtcong.Pool.Editor
                 return;
             }
 
-            FastPool.GetPoolInfos(_infos);
+            VtcFastPool.GetPoolInfos(_infos);
 
             int totalIdle = 0;
             int totalActive = 0;
@@ -71,7 +71,7 @@ namespace Vtcong.Pool.Editor
                     GUILayout.Label(info.KeepParentOnReturn ? "x" : "", GUILayout.Width(35));
 
                     if (GUILayout.Button("Clear", GUILayout.Width(50)) && info.Prefab != null)
-                        FastPool.ClearPool(info.Prefab);
+                        VtcFastPool.ClearPool(info.Prefab);
                 }
             }
 

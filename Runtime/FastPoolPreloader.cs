@@ -37,7 +37,7 @@ namespace Vtcong.Pool
                     continue;
                 }
 
-                FastPool.CreatePool(entry.prefab, entry.prewarmCount, null, entry.capacity, entry.keepParentOnReturn);
+                VtcFastPool.CreatePool(entry.prefab, entry.prewarmCount, null, entry.capacity, entry.keepParentOnReturn);
             }
         }
 
@@ -50,8 +50,8 @@ namespace Vtcong.Pool
                 Entry entry = pools[i];
                 if (entry == null || entry.prefab == null) continue;
 
-                if (destroyPerFrame > 0) FastPool.ClearPoolSlowly(entry.prefab, destroyPerFrame);
-                else FastPool.ClearPool(entry.prefab);
+                if (destroyPerFrame > 0) VtcFastPool.ClearPoolSlowly(entry.prefab, destroyPerFrame);
+                else VtcFastPool.ClearPool(entry.prefab);
             }
         }
     }

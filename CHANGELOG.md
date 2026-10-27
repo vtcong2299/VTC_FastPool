@@ -4,6 +4,12 @@ Tất cả thay đổi đáng chú ý của VTC Fast Pool được ghi ở đây
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/),
 đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [2.0.0] - 2026-10-27
+
+### Changed
+- Đổi tên class `FastPool` thành `VtcFastPool`. Mọi lời gọi đổi theo, ví dụ `FastPool.GetPool` thành
+  `VtcFastPool.GetPool`. Tiền tố log đổi thành `[VtcFastPool]`.
+
 ## [1.2.1] - 2026-10-26
 
 ### Fixed

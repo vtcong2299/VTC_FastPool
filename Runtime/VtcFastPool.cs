@@ -33,7 +33,7 @@ namespace Vtcong.Pool
         }
     }
 
-    public static class FastPool
+    public static class VtcFastPool
     {
         private sealed class PoolData
         {
@@ -155,7 +155,7 @@ namespace Vtcong.Pool
         {
             if (prefab == null)
             {
-                Debug.LogError("[FastPool] Prefab is null.");
+                Debug.LogError("[VtcFastPool] Prefab is null.");
                 return null;
             }
 
@@ -165,13 +165,13 @@ namespace Vtcong.Pool
             {
                 if (capacity != 0 && capacity != pool.Capacity)
                 {
-                    Debug.LogWarning($"[FastPool] Pool '{prefab.name}' da ton tai voi capacity {pool.Capacity}, " +
+                    Debug.LogWarning($"[VtcFastPool] Pool '{prefab.name}' da ton tai voi capacity {pool.Capacity}, " +
                                      $"bo qua capacity {capacity}.");
                 }
 
                 if (keepParentOnReturn && !pool.KeepParentOnReturn)
                 {
-                    Debug.LogWarning($"[FastPool] Pool '{prefab.name}' da ton tai, bo qua keepParentOnReturn.");
+                    Debug.LogWarning($"[VtcFastPool] Pool '{prefab.name}' da ton tai, bo qua keepParentOnReturn.");
                 }
 
                 if (prewarmCount > 0) Prewarm(pool, prewarmCount);
@@ -246,7 +246,7 @@ namespace Vtcong.Pool
             if (target.TryGetComponent(out T component)) return component;
 
             // Tra lai pool thay vi de object mo coi (khong ai giu tham chieu de ReturnPool).
-            Debug.LogError($"[FastPool] '{target.name}' khong co component {typeof(T).Name}.");
+            Debug.LogError($"[VtcFastPool] '{target.name}' khong co component {typeof(T).Name}.");
             ReturnPool(target);
             return null;
         }
@@ -255,7 +255,7 @@ namespace Vtcong.Pool
         {
             if (prefab == null)
             {
-                Debug.LogError("[FastPool] GetPool prefab is null.");
+                Debug.LogError("[VtcFastPool] GetPool prefab is null.");
                 return null;
             }
 
@@ -314,19 +314,19 @@ namespace Vtcong.Pool
             if (!LiveObjects.TryGetValue(target.GetInstanceID(), out FastPoolObject poolObject) ||
                 poolObject == null)
             {
-                Debug.LogWarning($"[FastPool] '{target.name}' does not belong to FastPool.");
+                Debug.LogWarning($"[VtcFastPool] '{target.name}' does not belong to VtcFastPool.");
                 return;
             }
 
             if (poolObject.IsPooled)
             {
-                Debug.LogWarning($"[FastPool] '{target.name}' was already returned.");
+                Debug.LogWarning($"[VtcFastPool] '{target.name}' was already returned.");
                 return;
             }
 
             if (!PoolsById.TryGetValue(poolObject.PoolId, out PoolData pool))
             {
-                Debug.LogWarning($"[FastPool] Pool '{poolObject.PoolId}' no longer exists.");
+                Debug.LogWarning($"[VtcFastPool] Pool '{poolObject.PoolId}' no longer exists.");
                 return;
             }
 
@@ -597,7 +597,7 @@ namespace Vtcong.Pool
 
             for (int i = 0; i < buffer.Count; i++) Release(buffer[i]);
 
-            // Chi huy parent do FastPool tu tao. Parent user truyen vao co the la object
+            // Chi huy parent do VtcFastPool tu tao. Parent user truyen vao co the la object
             // dung chung trong scene -> khong duoc dung toi.
             if (pool.OwnsParent && pool.Parent != null) SafeDestroy(pool.Parent.gameObject);
             pool.Parent = null;
@@ -671,7 +671,7 @@ namespace Vtcong.Pool
             // Prefab nguon co the da bi huy (vd: prefab la object trong scene da unload).
             if (pool.Prefab == null)
             {
-                Debug.LogError($"[FastPool] Prefab nguon cua pool '{pool.Id}' da bi huy.");
+                Debug.LogError($"[VtcFastPool] Prefab nguon cua pool '{pool.Id}' da bi huy.");
                 return null;
             }
 

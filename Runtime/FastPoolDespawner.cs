@@ -5,7 +5,7 @@ namespace Vtcong.Pool
 {
     /// <summary>
     /// Tu ReturnPool object khi het lifetime, hoac khi moi particle / audio duoc chon da chay xong
-    /// (dieu kien nao den truoc). Chi chay voi object lay tu FastPool.GetPool.
+    /// (dieu kien nao den truoc). Chi chay voi object lay tu VtcFastPool.GetPool.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class FastPoolDespawner : MonoBehaviour, IPoolable
@@ -78,7 +78,7 @@ namespace Vtcong.Pool
             }
 
             _routine = null;
-            FastPool.ReturnPool(gameObject);
+            VtcFastPool.ReturnPool(gameObject);
         }
 
         private bool IsWaitingParticles()

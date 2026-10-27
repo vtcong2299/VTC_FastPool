@@ -27,10 +27,10 @@ Không chạy trong batchmode (CI). Mất mạng thì bỏ qua, không báo lỗ
 ## Dùng
 
 ```csharp
-FastPool.CreatePool(bulletPrefab, prewarmCount: 50);
+VtcFastPool.CreatePool(bulletPrefab, prewarmCount: 50);
 
-var bullet = FastPool.GetPool(bulletPrefab, position, rotation);
-FastPool.ReturnPool(bullet);
+var bullet = VtcFastPool.GetPool(bulletPrefab, position, rotation);
+VtcFastPool.ReturnPool(bullet);
 ```
 
 Muốn nhận sự kiện lúc lấy ra / trả về thì implement `IPoolable`:
@@ -52,7 +52,7 @@ Gắn vào prefab effect hoặc SFX. Object tự `ReturnPool` khi điều kiện
 - `waitForAudio`: mọi `AudioSource` trong object đã dừng.
 
 Với particle hoặc audio loop, đặt thêm `lifetime` làm chốt an toàn. `restartParticlesOnSpawn` chạy lại
-particle từ đầu mỗi lần spawn. Chỉ hoạt động với object lấy ra bằng `FastPool.GetPool`.
+particle từ đầu mỗi lần spawn. Chỉ hoạt động với object lấy ra bằng `VtcFastPool.GetPool`.
 
 ### Khai báo pool trong Inspector: `FastPoolPreloader`
 
@@ -63,7 +63,7 @@ Pool được tạo trong `Awake` của scene. Bật `clearOnDestroy` để xóa
 ### Giữ parent khi trả về (cho UI)
 
 ```csharp
-FastPool.CreatePool(itemPrefab, prewarmCount: 20, keepParentOnReturn: true);
+VtcFastPool.CreatePool(itemPrefab, prewarmCount: 20, keepParentOnReturn: true);
 ```
 
 `ReturnPool` chỉ tắt object, không đổi parent, nên Canvas không phải rebuild. Object nằm lại dưới parent
@@ -73,8 +73,8 @@ dụng khi pool được tạo lần đầu.
 ### Xóa pool dần qua nhiều frame
 
 ```csharp
-FastPool.ClearPoolSlowly(prefab, destroyPerFrame: 20);
-FastPool.ClearAllSlowly(destroyPerFrame: 20);
+VtcFastPool.ClearPoolSlowly(prefab, destroyPerFrame: 20);
+VtcFastPool.ClearAllSlowly(destroyPerFrame: 20);
 ```
 
 Pool bị gỡ ngay (lần `GetPool` sau tạo pool mới), object đang dùng bị hủy ngay như `ClearPool`, còn
@@ -83,7 +83,7 @@ object đang nằm trong pool được hủy dần. Ngoài Play mode thì hủy 
 ### Xem pool lúc chạy
 
 **Window ▸ VTC ▸ Fast Pool Monitor**: ID, prefab, số object trong pool, đang dùng, capacity của từng
-pool khi đang Play. Lấy cùng dữ liệu từ code bằng `FastPool.GetPoolInfos(list)`.
+pool khi đang Play. Lấy cùng dữ liệu từ code bằng `VtcFastPool.GetPoolInfos(list)`.
 
 ### Pool cho object C# thường
 

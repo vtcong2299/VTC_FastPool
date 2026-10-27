@@ -4,7 +4,7 @@ namespace Vtcong.Pool.Samples
 {
     /// <summary>
     /// Vien dan demo: bay theo huong duoc set luc spawn, tu tra ve pool sau <see cref="lifeTime"/> giay.
-    /// Implement <see cref="IPoolable"/> nen se nhan OnSpawn/OnReturn tu FastPool.
+    /// Implement <see cref="IPoolable"/> nen se nhan OnSpawn/OnReturn tu VtcFastPool.
     /// </summary>
     public class DemoBullet : MonoBehaviour, IPoolable
     {
@@ -22,7 +22,7 @@ namespace Vtcong.Pool.Samples
             _direction = direction.normalized;
         }
 
-        // Duoc FastPool goi sau khi object da active va transform da duoc set.
+        // Duoc VtcFastPool goi sau khi object da active va transform da duoc set.
         public void OnSpawn()
         {
             _timer = 0f;
@@ -30,7 +30,7 @@ namespace Vtcong.Pool.Samples
             SpawnCallbacks++;
         }
 
-        // Duoc FastPool goi truoc khi object bi tat.
+        // Duoc VtcFastPool goi truoc khi object bi tat.
         public void OnReturn()
         {
             ReturnCallbacks++;
@@ -43,8 +43,8 @@ namespace Vtcong.Pool.Samples
             _timer += Time.deltaTime;
             if (_timer < lifeTime) return;
 
-            // Tu tra ve pool. FastPool se canh bao neu object da duoc tra roi.
-            FastPool.ReturnPool(gameObject);
+            // Tu tra ve pool. VtcFastPool se canh bao neu object da duoc tra roi.
+            VtcFastPool.ReturnPool(gameObject);
         }
     }
 }
